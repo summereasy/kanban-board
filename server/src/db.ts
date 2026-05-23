@@ -11,8 +11,18 @@ import {
 import type { Board, Database } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_FILE = path.resolve(__dirname, "../data/db.json");
-const LEGACY_FILE = path.resolve(__dirname, "../data/board.json");
+const DEFAULT_DATA_DIR = path.resolve(__dirname, "../data");
+
+function dataFile(): string {
+  return (
+    process.env.KANBAN_DATA_FILE ??
+    path.join(DEFAULT_DATA_DIR, "db.json")
+  );
+}
+
+function legacyFile(): string {
+  return path.join(path.dirname(dataFile()), "board.json");
+}
 
 function emptyBoard(): Board {
   return {
@@ -37,9 +47,17 @@ function isDatabase(value: unknown): value is Database {
 
 let writeQueue: Promise<void> = Promise.resolve();
 
+/** Reset in-process write queue between tests. */
+export function resetDbForTests(): void {
+  writeQueue = Promise.resolve();
+}
+
 async function migrateIfNeeded(): Promise<Database> {
+  const dbPath = dataFile();
+  const legacyPath = legacyFile();
+
   try {
-    const raw = await fs.readFile(LEGACY_FILE, "utf8");
+    const raw = await fs.readFile(legacyPath, "utf8");
     const legacy = JSON.parse(raw) as Board;
     const usedIds = new Set<string>();
     const project = {
@@ -51,9 +69,9 @@ async function migrateIfNeeded(): Promise<Database> {
       projects: [project],
       boards: { [project.id]: legacy },
     };
-    await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(db, null, 2), "utf8");
-    await fs.rename(LEGACY_FILE, `${LEGACY_FILE}.migrated`);
+    await fs.mkdir(path.dirname(dbPath), { recursive: true });
+    await fs.writeFile(dbPath, JSON.stringify(db, null, 2), "utf8");
+    await fs.rename(legacyPath, `${legacyPath}.migrated`);
     return db;
   } catch {
     const usedIds = new Set<string>();
@@ -66,15 +84,15 @@ async function migrateIfNeeded(): Promise<Database> {
       projects: [project],
       boards: { [project.id]: emptyBoard() },
     };
-    await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(db, null, 2), "utf8");
+    await fs.mkdir(path.dirname(dbPath), { recursive: true });
+    await fs.writeFile(dbPath, JSON.stringify(db, null, 2), "utf8");
     return db;
   }
 }
 
 async function ensureFile(): Promise<void> {
   try {
-    await fs.access(DATA_FILE);
+    await fs.access(dataFile());
   } catch {
     await migrateIfNeeded();
   }
@@ -89,7 +107,7 @@ async function normalizeDb(db: Database): Promise<Database> {
 
 export async function readDb(): Promise<Database> {
   await ensureFile();
-  const raw = await fs.readFile(DATA_FILE, "utf8");
+  const raw = await fs.readFile(dataFile(), "utf8");
   const parsed = JSON.parse(raw);
   if (!isDatabase(parsed)) {
     const db = await migrateIfNeeded();
@@ -100,7 +118,7 @@ export async function readDb(): Promise<Database> {
 
 export async function writeDb(db: Database): Promise<void> {
   writeQueue = writeQueue.then(() =>
-    fs.writeFile(DATA_FILE, JSON.stringify(db, null, 2), "utf8"),
+    fs.writeFile(dataFile(), JSON.stringify(db, null, 2), "utf8"),
   );
   await writeQueue;
 }
