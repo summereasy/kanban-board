@@ -5,6 +5,7 @@ export type Column = {
 };
 
 export type Card = {
+  /** 8-char nanoid */
   id: string;
   columnId: string;
   title: string;
@@ -18,6 +19,7 @@ export type Board = {
 };
 
 export type Project = {
+  /** 8-char nanoid */
   id: string;
   name: string;
   createdAt: string;

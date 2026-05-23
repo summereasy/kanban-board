@@ -57,7 +57,7 @@ export function printBoard(board: Board, projectName?: string): void {
                 : c.description
             )
           : "";
-      const idStr = chalk.dim(`[${c.id.slice(0, 8)}]`);
+      const idStr = chalk.dim(`[${c.id}]`);
       return `${chalk.white(c.title)}\n${desc ? desc + "\n" : ""}${idStr}`;
     });
   }

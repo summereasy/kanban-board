@@ -2,6 +2,12 @@ import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { randomUUID } from "node:crypto";
+import {
+  collectUsedIds,
+  generateShortId,
+  migrateToShortIds,
+  needsShortIdMigration,
+} from "./ids.js";
 import type { Board, Database } from "./types.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -35,8 +41,9 @@ async function migrateIfNeeded(): Promise<Database> {
   try {
     const raw = await fs.readFile(LEGACY_FILE, "utf8");
     const legacy = JSON.parse(raw) as Board;
+    const usedIds = new Set<string>();
     const project = {
-      id: randomUUID(),
+      id: generateShortId(usedIds),
       name: "Default",
       createdAt: new Date().toISOString(),
     };
@@ -49,8 +56,9 @@ async function migrateIfNeeded(): Promise<Database> {
     await fs.rename(LEGACY_FILE, `${LEGACY_FILE}.migrated`);
     return db;
   } catch {
+    const usedIds = new Set<string>();
     const project = {
-      id: randomUUID(),
+      id: generateShortId(usedIds),
       name: "Default",
       createdAt: new Date().toISOString(),
     };
@@ -72,14 +80,22 @@ async function ensureFile(): Promise<void> {
   }
 }
 
+async function normalizeDb(db: Database): Promise<Database> {
+  if (!needsShortIdMigration(db)) return db;
+  migrateToShortIds(db);
+  await writeDb(db);
+  return db;
+}
+
 export async function readDb(): Promise<Database> {
   await ensureFile();
   const raw = await fs.readFile(DATA_FILE, "utf8");
   const parsed = JSON.parse(raw);
   if (!isDatabase(parsed)) {
-    return migrateIfNeeded();
+    const db = await migrateIfNeeded();
+    return normalizeDb(db);
   }
-  return parsed;
+  return normalizeDb(parsed);
 }
 
 export async function writeDb(db: Database): Promise<void> {
@@ -110,16 +126,21 @@ export async function mutateBoard<T>(
   return result;
 }
 
-export function createProject(name: string): {
+export function createProject(
+  name: string,
+  usedIds: Set<string>,
+): {
   project: { id: string; name: string; createdAt: string };
   board: Board;
 } {
   return {
     project: {
-      id: randomUUID(),
+      id: generateShortId(usedIds),
       name,
       createdAt: new Date().toISOString(),
     },
     board: emptyBoard(),
   };
 }
+
+export { collectUsedIds, generateShortId };

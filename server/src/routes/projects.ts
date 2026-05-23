@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createProject, mutateDb, readDb } from "../db.js";
+import { createProject, collectUsedIds, mutateDb, readDb } from "../db.js";
 
 export const projectsRouter = Router();
 
@@ -16,7 +16,8 @@ projectsRouter.post("/", async (req, res) => {
   if (!name) return res.status(400).json({ error: "name is required" });
 
   const project = await mutateDb((db) => {
-    const { project, board } = createProject(name);
+    const usedIds = collectUsedIds(db);
+    const { project, board } = createProject(name, usedIds);
     db.projects.push(project);
     db.boards[project.id] = board;
     return project;

@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { randomUUID } from "node:crypto";
-import { mutateBoard } from "../db.js";
+import { collectUsedIds, generateShortId, mutateBoard, mutateDb } from "../db.js";
 
 export const cardsRouter = Router({ mergeParams: true });
 
@@ -15,16 +14,25 @@ cardsRouter.post("/", async (req, res) => {
     return res.status(400).json({ error: "columnId and title are required" });
   }
 
-  const result = await mutateBoard(projectId, (board) => {
+  const result = await mutateDb((db) => {
+    const board = db.boards[projectId];
+    if (!board) return null;
     const column = board.columns.find((c) => c.id === columnId);
-    if (!column) return null;
+    if (!column) return undefined;
     const order = board.cards.filter((c) => c.columnId === columnId).length;
-    const created = { id: randomUUID(), columnId, title, description, order };
+    const usedIds = collectUsedIds(db);
+    const created = {
+      id: generateShortId(usedIds),
+      columnId,
+      title,
+      description,
+      order,
+    };
     board.cards.push(created);
     return created;
   });
   if (result === null) return res.status(404).json({ error: "project not found" });
-  if (!result) return res.status(400).json({ error: "column not found" });
+  if (result === undefined) return res.status(400).json({ error: "column not found" });
   res.status(201).json(result);
 });
 
