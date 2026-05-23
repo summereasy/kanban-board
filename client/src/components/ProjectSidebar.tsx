@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { api, type Project } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -12,29 +12,27 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { navigate } from "@/hooks/useHashRoute";
+import { cn } from "@/lib/utils";
 
 type DialogState =
   | { mode: "closed" }
   | { mode: "create" }
   | { mode: "edit"; project: Project };
 
-export function Projects() {
-  const [projects, setProjects] = useState<Project[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+type Props = {
+  projects: Project[] | null;
+  error: string | null;
+  selectedProjectId: string | null;
+  onRefresh: () => Promise<void>;
+};
+
+export function ProjectSidebar({
+  projects,
+  error,
+  selectedProjectId,
+  onRefresh,
+}: Props) {
   const [dialog, setDialog] = useState<DialogState>({ mode: "closed" });
-
-  const refresh = useCallback(async () => {
-    try {
-      setProjects(await api.listProjects());
-      setError(null);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "failed to load projects");
-    }
-  }, []);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
 
   const handleDelete = async (project: Project) => {
     const ok = window.confirm(
@@ -42,69 +40,75 @@ export function Projects() {
     );
     if (!ok) return;
     await api.deleteProject(project.id);
-    await refresh();
+    if (project.id === selectedProjectId) navigate("/");
+    await onRefresh();
   };
 
   return (
-    <div className="flex h-screen flex-col">
-      <header className="flex items-center justify-between border-b bg-background px-6 py-3">
-        <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
-        <Button size="sm" onClick={() => setDialog({ mode: "create" })}>
+    <aside className="flex h-full w-64 shrink-0 flex-col border-r bg-background">
+      <header className="flex items-center justify-between border-b px-4 py-3">
+        <h1 className="text-sm font-semibold tracking-tight">Projects</h1>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8"
+          onClick={() => setDialog({ mode: "create" })}
+          aria-label="New project"
+        >
           <Plus className="h-4 w-4" />
-          New project
         </Button>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-2">
         {error && (
-          <div className="mb-4 text-sm text-destructive">{error}</div>
+          <div className="mb-2 px-2 text-xs text-destructive">{error}</div>
         )}
         {projects === null ? (
-          <div className="text-sm text-muted-foreground">Loading…</div>
+          <div className="px-2 text-xs text-muted-foreground">Loading…</div>
         ) : projects.length === 0 ? (
-          <div className="text-sm text-muted-foreground">
-            No projects yet. Click "New project" to create your first board.
+          <div className="px-2 text-xs text-muted-foreground">
+            No projects yet. Click + to create one.
           </div>
         ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <ul className="flex flex-col gap-0.5">
             {projects.map((p) => (
-              <li
-                key={p.id}
-                className="group flex items-center justify-between rounded-lg border bg-muted/40 p-4 transition-colors hover:bg-muted"
-              >
+              <li key={p.id} className="group relative">
                 <button
-                  className="flex-1 text-left"
+                  type="button"
+                  className={cn(
+                    "w-full rounded-md px-3 py-2 pr-14 text-left text-sm transition-colors",
+                    p.id === selectedProjectId
+                      ? "bg-accent font-medium text-accent-foreground"
+                      : "hover:bg-muted",
+                  )}
                   onClick={() => navigate(`/projects/${p.id}`)}
                 >
-                  <div className="font-semibold tracking-tight">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Created {new Date(p.createdAt).toLocaleDateString()}
-                  </div>
+                  <div className="truncate">{p.name}</div>
                 </button>
-                <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7"
+                    className="h-6 w-6"
                     onClick={(e) => {
                       e.stopPropagation();
                       setDialog({ mode: "edit", project: p });
                     }}
                     aria-label="Rename project"
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Pencil className="h-3 w-3" />
                   </Button>
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-7 w-7 text-destructive hover:text-destructive"
+                    className="h-6 w-6 text-destructive hover:text-destructive"
                     onClick={(e) => {
                       e.stopPropagation();
                       void handleDelete(p);
                     }}
                     aria-label="Delete project"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </li>
@@ -118,14 +122,16 @@ export function Projects() {
         onOpenChange={(open) => !open && setDialog({ mode: "closed" })}
         onSubmit={async (name) => {
           if (dialog.mode === "create") {
-            await api.createProject(name);
+            const created = await api.createProject(name);
+            await onRefresh();
+            navigate(`/projects/${created.id}`);
           } else if (dialog.mode === "edit") {
             await api.renameProject(dialog.project.id, name);
+            await onRefresh();
           }
-          await refresh();
         }}
       />
-    </div>
+    </aside>
   );
 }
 

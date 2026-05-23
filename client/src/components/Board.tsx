@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -6,19 +6,18 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useBoard } from "@/hooks/useBoard";
-import { api, type Project } from "@/lib/api";
-import { navigate } from "@/hooks/useHashRoute";
 import { Button } from "@/components/ui/button";
 import { Column } from "./Column";
 import { ColumnDialog } from "./ColumnDialog";
 
 type Props = {
   projectId: string;
+  projectName?: string;
 };
 
-export function Board({ projectId }: Props) {
+export function Board({ projectId, projectName }: Props) {
   const {
     board,
     loading,
@@ -32,21 +31,6 @@ export function Board({ projectId }: Props) {
     moveCardOptimistic,
   } = useBoard(projectId);
   const [newColumnOpen, setNewColumnOpen] = useState(false);
-  const [project, setProject] = useState<Project | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void api
-      .listProjects()
-      .then((list) => {
-        if (cancelled) return;
-        setProject(list.find((p) => p.id === projectId) ?? null);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [projectId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -66,19 +50,15 @@ export function Board({ projectId }: Props) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center text-muted-foreground">
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
         Loading board…
       </div>
     );
   }
   if (error) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 text-destructive">
-        <div>{error}</div>
-        <Button variant="outline" onClick={() => navigate("/")}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to projects
-        </Button>
+      <div className="flex flex-1 items-center justify-center text-destructive">
+        {error}
       </div>
     );
   }
@@ -87,22 +67,11 @@ export function Board({ projectId }: Props) {
   const columns = [...board.columns].sort((a, b) => a.order - b.order);
 
   return (
-    <div className="flex h-screen flex-col">
+    <div className="flex h-full flex-col">
       <header className="flex items-center justify-between border-b bg-background px-6 py-3">
-        <div className="flex items-center gap-3">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-8 w-8"
-            onClick={() => navigate("/")}
-            aria-label="Back to projects"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-lg font-semibold tracking-tight">
-            {project?.name ?? "Kanban Board"}
-          </h1>
-        </div>
+        <h1 className="text-lg font-semibold tracking-tight">
+          {projectName ?? "Kanban Board"}
+        </h1>
         <Button size="sm" onClick={() => setNewColumnOpen(true)}>
           <Plus className="h-4 w-4" />
           Add column
@@ -111,7 +80,7 @@ export function Board({ projectId }: Props) {
 
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div className="flex-1 overflow-x-auto overflow-y-hidden p-6">
-          <div className="flex h-full gap-4 items-start">
+          <div className="flex h-full items-start gap-4">
             {columns.map((col) => (
               <Column
                 key={col.id}
