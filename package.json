@@ -2,17 +2,18 @@
   "name": "kanban-board",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "bun@1.3.14",
   "workspaces": [
     "client",
     "server",
     "cli"
   ],
   "scripts": {
-    "dev": "concurrently -k -n server,client -c blue,green \"npm run dev -w server\" \"npm run dev -w client\"",
-    "build": "npm run build -w client && npm run build -w server && npm run build -w cli",
-    "start": "npm run start -w server",
+    "dev": "concurrently -k -n server,client -c blue,green \"bun run --filter server dev\" \"bun run --filter client dev\"",
+    "build": "bun run --filter client build && bun run --filter server build && bun run --filter kanban-cli build",
+    "start": "bun run --filter server start",
     "test": "vitest run --config server/vitest.config.ts",
-    "kanban": "npm run -w cli start --"
+    "kanban": "bun run --filter kanban-cli start --"
   },
   "devDependencies": {
     "concurrently": "^9.1.0"

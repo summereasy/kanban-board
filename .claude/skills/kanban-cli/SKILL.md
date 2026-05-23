@@ -14,7 +14,7 @@ description: >
 
 The `kanban` command is globally linked and talks to the API at `http://localhost:3001`
 (override with `KANBAN_API_URL`). The server must be running — if commands fail
-with a connection error, remind the user to run `npm run dev -w server`.
+with a connection error, remind the user to run `bun run --filter server dev` (or `bun run dev`).
 
 ## ID Lookup Pattern
 
