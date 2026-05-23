@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+*.tsbuildinfo
+.DS_Store
+.env
+.env.local
+
+# persisted runtime state — auto-created on first run
+server/data/db.json
+server/data/board.json
+server/data/*.migrated
