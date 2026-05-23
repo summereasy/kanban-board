@@ -1,0 +1,49 @@
+/*
+ * Terminal palette — Ghostty "nordic"
+ * Source: ~/repos/dotfiles/ghostty/themes/nordic
+ *
+ * Swap this file (or its import in index.css) to change the whole app theme.
+ * Indices follow the usual 16-color terminal scheme (0–7 normal, 8–15 bright).
+ */
+
+@layer base {
+  :root {
+    /* 0 / 8 */
+    --palette-black: 218.2 18% 12%;
+    --palette-bright-black: 221.7 16.3% 27.6%;
+
+    /* 1 / 9 */
+    --palette-red: 354.3 42.3% 56.5%;
+    --palette-bright-red: 354.2 41.7% 61%;
+
+    /* 2 / 10 */
+    --palette-green: 92.1 28.4% 60%;
+    --palette-bright-green: 92.1 28.1% 70%;
+
+    /* 3 / 11 */
+    --palette-yellow: 40.3 70.7% 67.8%;
+    --palette-bright-yellow: 39.8 71.4% 78%;
+
+    /* 4 / 12 */
+    --palette-blue: 213.1 32% 52.2%;
+    --palette-bright-blue: 210 34% 63.1%;
+
+    /* 5 / 13 */
+    --palette-magenta: 311.2 20% 57.8%;
+    --palette-bright-magenta: 310.9 20.2% 68%;
+
+    /* 6 / 14 */
+    --palette-cyan: 178.8 25.1% 60.2%;
+    --palette-bright-cyan: 178.5 25.5% 70%;
+
+    /* 7 / 15 */
+    --palette-white: 220 23.5% 80%;
+    --palette-bright-white: 218.8 27.9% 88%;
+
+    /* Terminal chrome (not in the 16-color set) */
+    --palette-background: 220 17.2% 17.1%;
+    --palette-foreground: 220 23.5% 80%;
+    --palette-selection-background: 220 16.4% 21.6%;
+    --palette-selection-foreground: 218.8 27.9% 88%;
+  }
+}

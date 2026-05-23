@@ -1,0 +1,38 @@
+/*
+ * UI semantic tokens → terminal palette.
+ * Edit mappings here; edit palette-* values in palette-*.css to change colors.
+ */
+
+@layer base {
+  :root {
+    --background: var(--palette-background);
+    --foreground: var(--palette-foreground);
+
+    --card: var(--palette-selection-background);
+    --card-foreground: var(--palette-selection-foreground);
+
+    --popover: var(--palette-bright-black);
+    --popover-foreground: var(--palette-bright-white);
+
+    --primary: var(--palette-bright-cyan);
+    --primary-foreground: var(--palette-black);
+
+    --secondary: var(--palette-bright-black);
+    --secondary-foreground: var(--palette-bright-white);
+
+    --muted: var(--palette-black);
+    --muted-foreground: var(--palette-blue);
+
+    --accent: var(--palette-bright-black);
+    --accent-foreground: var(--palette-bright-white);
+
+    --destructive: var(--palette-red);
+    --destructive-foreground: var(--palette-bright-white);
+
+    --border: var(--palette-bright-black);
+    --input: var(--palette-bright-black);
+    --ring: var(--palette-bright-cyan);
+
+    --radius: 0.5rem;
+  }
+}
